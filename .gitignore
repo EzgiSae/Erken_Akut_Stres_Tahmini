@@ -3,3 +3,5 @@ data/
 *.npz
 *.keras
 *.pkl
+__pycache__/
+.vscode/
