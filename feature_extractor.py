@@ -49,7 +49,7 @@ def extract_features_from_window(window_slow, window_fast):
     features.append(np.mean(eda_sig))
     features.append(np.std(eda_sig))
     features.append(np.max(eda_sig) - np.min(eda_sig))
-    # Eğim (Linear Regression Slope)
+    # Eğim (Linear Regression Slope) 
     features.append(np.polyfit(np.arange(len(eda_sig)), eda_sig, 1)[0])
     # Tepe noktası (Local Maxima) sayısı
     eda_peaks = np.where((eda_sig[1:-1] > eda_sig[:-2]) & (eda_sig[1:-1] > eda_sig[2:]))[0]
