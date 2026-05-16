@@ -1,0 +1,5 @@
+venv/
+data/
+*.npz
+*.keras
+*.pkl

@@ -1,0 +1,140 @@
+"""
+WESAD Veri Seti - Hibrit CNN-LSTM Çok Modlu Eğitim Modülü (Tekil Çalıştırma)
+
+Bu modül; düşük frekanslı sinyalleri (EDA, TEMP, ACC), yüksek frekanslı BVP 
+sinyalini ve önceden çıkarılmış istatistiksel öznitelikleri birleştiren 
+üç kollu (Tri-branch) bir derin öğrenme mimarisini eğitir.
+
+Mimari Özellikleri:
+- Branch 1 (Slow): 4 Hz veriler için 1D-CNN ve LSTM.
+- Branch 2 (Fast): 64 Hz BVP verisi için derinleştirilmiş 1D-CNN ve LSTM.
+- Branch 3 (Expert): 24 boyutlu öznitelik vektörü için Dense katmanlar.
+- Füzyon: Üç koldan gelen öznitelik haritalarının birleştirilerek nihai 
+  stres/erken uyarı sınıflandırmasının yapılması.
+
+Sınıflandırma Hedefi: Erken Uyarı (EW) vs. Akut Stres (Stress)
+"""
+
+import numpy as np
+from keras.models import Model
+from keras.layers import (Input, Conv1D, MaxPooling1D, LSTM, Dense, 
+                          Dropout, Concatenate, BatchNormalization, 
+                          SpatialDropout1D)
+from keras.callbacks import EarlyStopping
+from keras.optimizers import Adam
+from keras.regularizers import l2
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import classification_report, confusion_matrix
+
+def load_final_datasets():
+    """Ham sinyal ve öznitelik dosyalarını yükler."""
+    raw_data = np.load("dl_multimodal_dataset.npz")
+    feat_data = np.load("multimodal_feature_dataset.npz")
+    
+    return (
+        raw_data["X_train_slow"], raw_data["X_train_fast"], feat_data["X_train"], raw_data["y_train"],
+        raw_data["X_test_slow"], raw_data["X_test_fast"], feat_data["X_test"], raw_data["y_test"]
+    )
+
+def build_multimodal_model(slow_shape, fast_shape, feat_shape):
+    """
+    Üç kollu hibrit model mimarisini inşa eder.
+    
+    Parametreler:
+        slow_shape: (120, 3) - EDA, TEMP, ACC (4 Hz * 30 sn)
+        fast_shape: (1920, 1) - BVP (64 Hz * 30 sn)
+        feat_shape: (24,) - İstatistiksel öznitelikler
+    """
+    reg = l2(0.0005) # Overfitting kontrolü için L2 regularizasyonu
+
+    # --- KOL 1: Yavaş Kanallar (Slow Signals - 4 Hz) ---
+    input_slow = Input(shape=slow_shape, name="Slow_Input")
+    s = Conv1D(32, 3, activation='relu', padding='same', kernel_regularizer=reg)(input_slow)
+    s = BatchNormalization()(s)
+    s = SpatialDropout1D(0.3)(s)
+    s = MaxPooling1D(2)(s)
+    s = LSTM(32, dropout=0.3, recurrent_dropout=0.3)(s)
+
+    # --- KOL 2: Hızlı Kanal (Fast Signal - BVP 64 Hz) ---
+    input_fast = Input(shape=fast_shape, name="Fast_Input")
+    f = Conv1D(64, 7, activation='relu', padding='same', kernel_regularizer=reg)(input_fast)
+    f = BatchNormalization()(f)
+    f = SpatialDropout1D(0.3)(f)
+    f = MaxPooling1D(4)(f)
+    f = Conv1D(128, 5, activation='relu', padding='same', kernel_regularizer=reg)(f)
+    f = MaxPooling1D(4)(f)
+    f = LSTM(64, dropout=0.3)(f)
+
+    # --- KOL 3: Uzman Öznitelikler (Expert Features - 24D) ---
+    input_feat = Input(shape=feat_shape, name="Feat_Input")
+    feat = Dense(64, activation='relu', kernel_regularizer=reg)(input_feat)
+    feat = BatchNormalization()(feat)
+    feat = Dropout(0.4)(feat)
+
+    # --- Öznitelik Füzyonu ve Karar Katmanları ---
+    combined = Concatenate()([s, f, feat])
+    x = Dense(128, activation='relu', kernel_regularizer=reg)(combined)
+    x = Dropout(0.5)(x)
+    x = Dense(32, activation='relu')(x)
+    output = Dense(1, activation='sigmoid')(x)
+
+    model = Model(inputs=[input_slow, input_fast, input_feat], outputs=output)
+    model.compile(
+        optimizer=Adam(learning_rate=0.0002), 
+        loss='binary_crossentropy', 
+        metrics=['accuracy']
+    )
+    return model
+
+def main():
+    # 1. Veri Yükleme ve Hazırlık
+    (X_tr_slow, X_tr_fast, X_tr_feat, y_train, 
+     X_te_slow, X_te_fast, X_te_feat, y_test) = load_final_datasets()
+
+    # Öznitelik vektörlerini normalize et (Z-Score)
+    scaler = StandardScaler()
+    X_tr_feat = scaler.fit_transform(X_tr_feat)
+    X_te_feat = scaler.transform(X_te_feat)
+
+    # 2. Model Kurulumu
+    # Girdi boyutları: Slow (120, 3), Fast (1920, 1), Feat (24,)
+    model = build_multimodal_model((120, 3), (1920, 1), (24,))
+    
+    # 3. Eğitim Yapılandırması
+    # EarlyStopping ile en iyi ağırlıkları geri yükle (overfitting önleyici)
+    early_stop = EarlyStopping(
+        monitor='val_loss', 
+        patience=7, 
+        restore_best_weights=True
+    )
+
+    print("\n--- Çok Modlu Hibrit Model Eğitimi Başlıyor ---")
+    
+    history = model.fit(
+        x=[X_tr_slow, X_tr_fast, X_tr_feat],
+        y=y_train,
+        validation_split=0.2,
+        epochs=50,
+        batch_size=32,
+        # Sınıf dengesizliğini gidermek için manuel ağırlıklandırma (EW: 2.5, Stress: 1.0)
+        class_weight={0: 2.5, 1: 1.0},
+        callbacks=[early_stop],
+        verbose=1
+    )
+
+    # 4. Performans Değerlendirme (Threshold: 0.5)
+    print("\n--- Nihai Test Performansı (Eşik: 0.5) ---")
+    y_prob = model.predict([X_te_slow, X_te_fast, X_te_feat])
+    y_pred = (y_prob > 0.5).astype(int)
+    
+    print(classification_report(
+        y_test, y_pred, 
+        target_names=["Erken Uyari (EW)", "Akut Stres"], 
+        zero_division=0
+    ))
+    
+    print("Karmaşıklık Matrisi (Confusion Matrix):")
+    print(confusion_matrix(y_test, y_pred))
+
+if __name__ == "__main__":
+    main()
