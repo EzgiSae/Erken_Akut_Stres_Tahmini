@@ -9,14 +9,12 @@ girdi tensörlerini oluşturur.
 - Çok Modlu Yapı: Yavaş (4 Hz) ve Hızlı (64 Hz) kanalları eş zamanlı pencereler.
 - Etiket Karar Mekanizması: Pencere içindeki baskın duruma göre etiket ataması.
 - İkili Sınıflandırma: Erken Uyarı (EW=0) ve Akut Stres (Stress=1) dönüşümü.
-
-Geliştiren: Ezgi Sarıca
 """
 
 import numpy as np
 from preprocess import preprocess_subject
 
-def build_multimodal_windows(data, window_seconds=30, slow_fs=4, fast_fs=64, step_seconds=1):
+def build_multimodal_windows(data, window_seconds=60, slow_fs=4, fast_fs=64, step_seconds=1):
     """
     Sinyalleri zaman pencerelerine böler ve çok modlu giriş tensörlerini hazırlar.
     
@@ -71,7 +69,7 @@ def build_multimodal_windows(data, window_seconds=30, slow_fs=4, fast_fs=64, ste
     return np.array(X_slow), np.array(X_fast), np.array(y)
 
 def build_subject_dataset(subject_id, ew_seconds=60, slow_fs=4, fast_fs=64,
-                          window_seconds=30, step_seconds=1):
+                          window_seconds=60, step_seconds=1):
     """
     Belirli bir denek için tüm işlem hattını yürüterek final veri kümesini oluşturur.
     """
