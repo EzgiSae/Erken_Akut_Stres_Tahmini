@@ -1,18 +1,10 @@
 """
-WESAD Veri Seti - Hibrit CNN-LSTM Çok Modlu Eğitim Modülü (Tekil Çalıştırma)
+WESAD Veri Seti - Hibrit CNN-LSTM Çok Modlu Eğitim Modülü (60s Güncel Versiyon)
 
-Bu modül; düşük frekanslı sinyalleri (EDA, TEMP, ACC), yüksek frekanslı BVP 
-sinyalini ve önceden çıkarılmış istatistiksel öznitelikleri birleştiren 
-üç kollu (Tri-branch) bir derin öğrenme mimarisini eğitir.
-
-Mimari Özellikleri:
-- Branch 1 (Slow): 4 Hz veriler için 1D-CNN ve LSTM.
-- Branch 2 (Fast): 64 Hz BVP verisi için derinleştirilmiş 1D-CNN ve LSTM.
-- Branch 3 (Expert): 24 boyutlu öznitelik vektörü için Dense katmanlar.
-- Füzyon: Üç koldan gelen öznitelik haritalarının birleştirilerek nihai 
-  stres/erken uyarı sınıflandırmasının yapılması.
-
-Sınıflandırma Hedefi: Erken Uyarı (EW) vs. Akut Stres (Stress)
+Mimari Özellikleri (60s Update):
+- Branch 1 (Slow): 4 Hz * 60 sn = 240 örnek (EDA, TEMP, ACC)
+- Branch 2 (Fast): 64 Hz * 60 sn = 3840 örnek (BVP)
+- Branch 3 (Expert): 24 boyutlu öznitelik vektörü
 """
 
 import numpy as np
@@ -28,6 +20,7 @@ from sklearn.metrics import classification_report, confusion_matrix
 
 def load_final_datasets():
     """Ham sinyal ve öznitelik dosyalarını yükler."""
+    # NOT: dataset_aggregator.py'yi 60s için çalıştırdığından emin ol!
     raw_data = np.load("dl_multimodal_dataset.npz")
     feat_data = np.load("multimodal_feature_dataset.npz")
     
@@ -40,12 +33,12 @@ def build_multimodal_model(slow_shape, fast_shape, feat_shape):
     """
     Üç kollu hibrit model mimarisini inşa eder.
     
-    Parametreler:
-        slow_shape: (120, 3) - EDA, TEMP, ACC (4 Hz * 30 sn)
-        fast_shape: (1920, 1) - BVP (64 Hz * 30 sn)
+    Parametreler (60s için güncellendi):
+        slow_shape: (240, 3) - EDA, TEMP, ACC (4 Hz * 60 sn)
+        fast_shape: (3840, 1) - BVP (64 Hz * 60 sn)
         feat_shape: (24,) - İstatistiksel öznitelikler
     """
-    reg = l2(0.0005) # Overfitting kontrolü için L2 regularizasyonu
+    reg = l2(0.0005) 
 
     # --- KOL 1: Yavaş Kanallar (Slow Signals - 4 Hz) ---
     input_slow = Input(shape=slow_shape, name="Slow_Input")
@@ -88,27 +81,30 @@ def build_multimodal_model(slow_shape, fast_shape, feat_shape):
 
 def main():
     # 1. Veri Yükleme ve Hazırlık
-    (X_tr_slow, X_tr_fast, X_tr_feat, y_train, 
-     X_te_slow, X_te_fast, X_te_feat, y_test) = load_final_datasets()
+    try:
+        (X_tr_slow, X_tr_fast, X_tr_feat, y_train, 
+         X_te_slow, X_te_fast, X_te_feat, y_test) = load_final_datasets()
+    except KeyError as e:
+        print(f"Hata: .npz dosyalarında beklenen anahtarlar bulunamadı: {e}")
+        return
 
-    # Öznitelik vektörlerini normalize et (Z-Score)
+    # Öznitelik vektörlerini normalize et
     scaler = StandardScaler()
     X_tr_feat = scaler.fit_transform(X_tr_feat)
     X_te_feat = scaler.transform(X_te_feat)
 
-    # 2. Model Kurulumu
-    # Girdi boyutları: Slow (120, 3), Fast (1920, 1), Feat (24,)
-    model = build_multimodal_model((120, 3), (1920, 1), (24,))
+    # 2. Model Kurulumu (60s parametreleri buraya işlendi)
+    # Girdi boyutları: Slow (240, 3), Fast (3840, 1), Feat (24,)
+    model = build_multimodal_model((240, 3), (3840, 1), (24,))
     
     # 3. Eğitim Yapılandırması
-    # EarlyStopping ile en iyi ağırlıkları geri yükle (overfitting önleyici)
     early_stop = EarlyStopping(
         monitor='val_loss', 
         patience=7, 
         restore_best_weights=True
     )
 
-    print("\n--- Çok Modlu Hibrit Model Eğitimi Başlıyor ---")
+    print("\n--- Çok Modlu Hibrit Model Eğitimi Başlıyor (60s Window) ---")
     
     history = model.fit(
         x=[X_tr_slow, X_tr_fast, X_tr_feat],
@@ -116,13 +112,12 @@ def main():
         validation_split=0.2,
         epochs=50,
         batch_size=32,
-        # Sınıf dengesizliğini gidermek için manuel ağırlıklandırma (EW: 2.5, Stress: 1.0)
         class_weight={0: 2.5, 1: 1.0},
         callbacks=[early_stop],
         verbose=1
     )
 
-    # 4. Performans Değerlendirme (Threshold: 0.5)
+    # 4. Performans Değerlendirme
     print("\n--- Nihai Test Performansı (Eşik: 0.5) ---")
     y_prob = model.predict([X_te_slow, X_te_fast, X_te_feat])
     y_pred = (y_prob > 0.5).astype(int)
