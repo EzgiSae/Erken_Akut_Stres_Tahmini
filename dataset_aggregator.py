@@ -50,7 +50,7 @@ def main():
     print(f"\n[2/3] Test kümesi hazırlanıyor ({len(test_subjects)} denek)...")
     x_test_slow, x_test_fast, y_test = aggregate_data(test_subjects)
 
-    # 3. Kaydetme (Hata düzeltildi: Değişken isimleri senkronize edildi)
+    # 3. Kaydetme (Hata düzeltildi. Değişken isimleri senkronize edildi)
     print(f"\n[3/3] Veriler kaydediliyor: '{save_path}'")
     
     np.savez(
