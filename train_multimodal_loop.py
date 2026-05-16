@@ -41,7 +41,7 @@ def main(runs=5):
         print(f"\n[Tur {run+1}/{runs}] Model eğitiliyor...")
         
         # Her turda taze bir model nesnesi oluşturulur
-        model = build_multimodal_model((120,3), (1920,1), (24,))
+        model = build_multimodal_model((240, 3), (3840, 1), (24,))
         early_stop = EarlyStopping(monitor='val_loss', patience=7, restore_best_weights=True)
         
         model.fit(
