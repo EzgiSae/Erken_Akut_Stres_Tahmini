@@ -10,8 +10,6 @@ normalizasyon uygular ve multimodal model eğitimine hazır hale getirir.
 - Label verisinin 'Majority Voting' yöntemiyle hizalanması.
 - Denek bazlı (Subject-wise) Z-Score normalizasyonu.
 - İvmeölçer (ACC) verisinden vektörel büyüklük (Magnitude) çıkarımı.
-
-Geliştiren: Ezgi Sarıca
 """
 
 import numpy as np
