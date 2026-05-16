@@ -4,9 +4,6 @@ WESAD Veri Seti - Erken Uyarı (Early Warning) Etiketi Oluşturucu
 Bu modül, WESAD veri setindeki ham etiket dizilerini analiz ederek stres 
 başlangıcını (onset) tespit eder ve bu başlangıçtan önceki belirli bir 
 zaman dilimini 'Erken Uyarı (Early Warning)' fazı olarak işaretler.
-
-Geliştiren: Ezgi Sarıca
-Proje: Akut Stres Tahmini ve Erken Uyarı Sistemi
 """
 
 import numpy as np
