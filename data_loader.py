@@ -70,7 +70,7 @@ def load_wesad_subject(subject_id):
 def debug_subject(subject_id="S2"):
     """
     Veri yükleme işlemini kontrol etmek için debug fonksiyonu.
-    Subject'e ait sinyal uzunluklarını, sampling rate bilgilerini ve label değerlerini yazdırır.
+    Subject'e ait sinyal uzunluklarını, sampling rate bilgilerini ve label değerlerini yazdırır. 
     """
 
     wrist, labels, fs = load_wesad_subject(subject_id)
