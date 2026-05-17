@@ -44,15 +44,15 @@ pip install numpy scikit-learn tensorflow keras pandas scipy
 Sistemi uçtan uca çalıştırmak için aşağıdaki işlem sırası takip edilmelidir:
 
 - **Veri Hazırlama:** Ham WESAD verilerinin senkronize edilmesi ve birleştirilmesi
-- ```bash
+```bash
 python dataset_aggregator.py
 ```
 - **Öznitelik Çıkarımı:** İstatistiksel uzman özniteliklerin hesaplanması
-- ```bash
+```bash
 python feature_extraction.py
 ```
 - **Model Eğitimi:** İstatistiksel kararlılık için 5 turlu bağımsız eğitim döngüsü
-- ```bash
+```bash
 python train_multimodal_loop.py
 ```
 ---
