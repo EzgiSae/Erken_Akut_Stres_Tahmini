@@ -36,29 +36,35 @@ Proje Python 3.11+ ortamında geliştirilmiştir. Gerekli kütüphaneleri yükle
 
 ```bash
 pip install numpy scikit-learn tensorflow keras pandas scipy
-4. Kullanım Adımları (Pipeline)
+---
+
+## 4. Kullanım Adımları (Pipeline)
 
 Sistemi uçtan uca çalıştırmak için aşağıdaki işlem sırası takip edilmelidir:
 
-Veri Hazırlama: Ham WESAD verilerinin senkronize edilmesi ve birleştirilmesi
+- **Veri Hazırlama:** Ham WESAD verilerinin senkronize edilmesi ve birleştirilmesi
 python dataset_aggregator.py
-Öznitelik Çıkarımı: İstatistiksel uzman özniteliklerin hesaplanması
+- **Öznitelik Çıkarımı:** İstatistiksel uzman özniteliklerin hesaplanması
 python feature_extraction.py
-Model Eğitimi: İstatistiksel kararlılık için 5 turlu bağımsız eğitim döngüsü
+- **Model Eğitimi:** İstatistiksel kararlılık için 5 turlu bağımsız eğitim döngüsü
 python train_multimodal_loop.py
-5. Performans Metrikleri
+---
+
+## 5. Performans Metrikleri
 
 Modelin istatistiksel analiz sonuçları, özellikle Erken Uyarı (EW) sınıfındaki düşük veri temsiline rağmen stabil performans göstermektedir:
 
-Metrik	Değer (Ortalama ± Std)
-Genel Accuracy	%85.18 ± 5.9
-Akut Stres F1-Score	0.9116 ± 0.04
-Erken Uyarı (EW) F1-Score	0.4674 ± 0.08
-EW Recall	0.5794 ± 0.22
-6. Akademik Bağlam
+-Metrik	Değer (Ortalama ± Std)
+-Genel Accuracy	%85.18 ± 5.9
+-Akut Stres F1-Score	0.9116 ± 0.04
+-Erken Uyarı (EW) F1-Score	0.4674 ± 0.08
+-EW Recall	0.5794 ± 0.22
+---
+
+## 6. Akademik Bağlam
 
 Bu çalışma, OSTİM Teknik Üniversitesi Bilgisayar Mühendisliği Bölümü bünyesinde, Dr. Öğr. Üyesi Barış Taha ULUDAĞ danışmanlığında yürütülmektedir. Proje kapsamında geliştirilen EW etiketleme prosedürü ve hibrit mimari, giyilebilir sağlık teknolojilerinde proaktif stres yönetimi için temel teşkil etmektedir.
 
-Yazar: Ezgi Sarıca
-E-posta: ezgi.sarica@outlook.com
-Proje Durumu: Aktif Geliştirme Aşamasında (V7 Final)
+-Yazar: Ezgi Sarıca
+-E-posta: ezgi.sarica@outlook.com
+-Proje Durumu: Aktif Geliştirme Aşamasında (V7 Final)
