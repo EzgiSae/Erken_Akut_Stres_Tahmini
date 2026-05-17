@@ -36,6 +36,7 @@ Proje Python 3.11+ ortamında geliştirilmiştir. Gerekli kütüphaneleri yükle
 
 ```bash
 pip install numpy scikit-learn tensorflow keras pandas scipy
+```
 ---
 
 ## 4. Kullanım Adımları (Pipeline)
